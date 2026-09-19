@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>旅遊行程規劃表｜可自由編輯版</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@500;700;900&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ocean-deep:#0B3D4C; --ocean:#1B8A9E; --ocean-light:#CDEAEF;
+    --coral:#E8572F; --coral-light:#FBE3DA;
+    --sand:#F6EEE0; --sand-deep:#EEE1C9; --sun:#F0A93B;
+    --ink:#1F2A30; --ink-soft:#5A6B70; --line:#DCD0B8; --card:#FFFDF8; --radius:14px;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0; background:var(--sand); color:var(--ink); font-family:'Noto Sans TC',sans-serif; -webkit-font-smoothing:antialiased;}
+  h1,h2,h3,.brand{font-family:'Zen Maru Gothic','Noto Sans TC',sans-serif;}
+  input,textarea,select{font-family:'Noto Sans TC',sans-serif;}
+  a{color:inherit;}
+  button{cursor:pointer;}
+
+  header.top{background:linear-gradient(135deg,var(--ocean-deep) 0%,#0E5A6E 55%,var(--ocean) 100%); color:#fff; padding:26px 24px 20px; position:relative; overflow:hidden;}
+  header.top::after{content:""; position:absolute; right:-60px; top:-60px; width:220px; height:220px; border-radius:50%; background:radial-gradient(circle,rgba(240,169,59,.35),transparent 70%);}
+  .top-inner{max-width:1200px;margin:0 auto;position:relative;z-index:1;}
+  .brand{font-size:24px;font-weight:900;letter-spacing:.5px;margin:0 0 4px;}
+  .brand small{display:block;font-family:'Noto Sans TC';font-weight:400;font-size:13px;opacity:.85;margin-top:4px;}
+  .edit-badge{display:inline-flex; align-items:center; gap:5px; background:rgba(240,169,59,.25); border:1px solid rgba(240,169,59,.5); border-radius:20px; padding:3px 12px; font-size:12px; margin-left:10px; vertical-align:middle;}
+
+  .toolbar{position:sticky; top:0; z-index:50; background:var(--card); border-bottom:1px solid var(--line); box-shadow:0 2px 10px rgba(11,61,76,.06);}
+  .toolbar-inner{max-width:1200px;margin:0 auto; display:flex; align-items:center; gap:16px; padding:10px 24px; flex-wrap:wrap;}
+  .budget-total{font-weight:700;font-size:14.5px;color:var(--ocean-deep);white-space:nowrap;}
+  .budget-total span{font-family:'Zen Maru Gothic';font-size:18px;color:var(--coral);margin-left:4px;}
+  .budget-breakdown{display:flex;gap:12px;flex-wrap:wrap;font-size:12px;color:var(--ink-soft);}
+  .budget-breakdown .bit{display:flex;align-items:center;gap:5px;}
+  .dot{width:8px;height:8px;border-radius:50%;display:inline-block;}
+  .toolbar-btns{margin-left:auto; display:flex; gap:8px;}
+  .ghost-btn{background:none;border:1px solid var(--line); color:var(--ink-soft); border-radius:8px; padding:6px 12px; font-size:12px;}
+  .ghost-btn:hover{border-color:var(--coral); color:var(--coral);}
+  .ghost-btn.danger:hover{border-color:#c0392b; color:#c0392b;}
+  .lock-btn{background:var(--ocean-deep); color:#fff; border:none; border-radius:8px; padding:7px 16px; font-size:12.5px; font-weight:700; font-family:'Zen Maru Gothic';}
+  .lock-btn:hover{background:#0E5A6E;}
+  .lock-btn.is-locked{background:var(--coral);}
+  .lock-btn.is-locked:hover{background:#cf4a24;}
+
+  /* ---- read-only (locked) view ---- */
+  .view-time{font-size:12px;color:var(--ink-soft);font-weight:700;letter-spacing:.3px;}
+  .view-title{font-size:15.5px;margin:2px 0 4px;color:var(--ink);font-family:'Zen Maru Gothic','Noto Sans TC';font-weight:700;}
+  .view-title .required-tag{display:inline-block; background:var(--ocean-light); color:var(--ocean-deep); font-size:11px; border-radius:6px; padding:2px 7px; margin-left:6px; font-weight:700; vertical-align:middle;}
+  .view-note{font-size:13px;color:var(--ink-soft);margin:0 0 8px;line-height:1.55; white-space:pre-wrap;}
+  .view-modes{display:flex; flex-wrap:wrap; gap:8px; margin-bottom:8px;}
+  .view-mode-chip{display:flex; align-items:center; gap:6px; background:#fff; border:1px solid var(--line); border-radius:20px; padding:5px 12px; font-size:12.5px; color:var(--ink);}
+  .view-mode-chip .ic{font-size:14px;}
+  .view-mode-chip .sub{color:var(--ink-soft); font-size:11.5px;}
+  .view-costs{display:flex; flex-wrap:wrap; gap:10px; margin-top:8px;}
+  .view-day-head{background:var(--card); border:1px solid var(--line); border-radius:var(--radius); padding:16px 18px; margin-bottom:16px;}
+  .view-day-head h2{font-size:21px;margin:0 0 4px;color:var(--ocean-deep);}
+  .view-day-head .desc{font-size:13px;color:var(--ink-soft);}
+  .view-day-tips{background:var(--ocean-light); border:1px solid #b7dde3; border-radius:10px; padding:10px 14px; font-size:12.5px; color:var(--ocean-deep); line-height:1.7; margin-top:10px;}
+  .view-day-tips b{font-family:'Zen Maru Gothic';}
+
+  .layout{max-width:1200px; margin:0 auto; display:flex; gap:22px; padding:22px; align-items:flex-start;}
+  nav.daynav{flex:0 0 200px; position:sticky; top:58px; display:flex; flex-direction:column; gap:8px;}
+  nav.daynav button.daybtn{text-align:left; background:var(--card); border:1px solid var(--line); border-left:4px solid transparent; border-radius:10px; padding:9px 12px; font-family:'Noto Sans TC';}
+  nav.daynav button.daybtn .d{font-size:11px;color:var(--ink-soft);}
+  nav.daynav button.daybtn .theme{font-size:13.5px;font-weight:700;color:var(--ink);margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  nav.daynav button.daybtn.active{border-left-color:var(--coral); background:var(--coral-light);}
+  nav.daynav button.daybtn.active .theme{color:var(--coral);}
+  nav.daynav button.add-day{border:1px dashed var(--line); background:transparent; border-radius:10px; padding:9px 12px; color:var(--ink-soft); font-size:13px;}
+  nav.daynav button.add-day:hover{border-color:var(--ocean); color:var(--ocean);}
+
+  main.daypanel{flex:1; min-width:0;}
+  .day-head{background:var(--card); border:1px solid var(--line); border-radius:var(--radius); padding:14px 16px; margin-bottom:16px;}
+  .day-head .row1{display:flex; gap:10px; margin-bottom:8px; flex-wrap:wrap;}
+  .field-inline{display:flex; flex-direction:column; gap:3px;}
+  .field-inline label{font-size:11px; color:var(--ink-soft);}
+  .day-head input.date-f{width:130px;}
+  .day-head input.theme-f{flex:1; min-width:180px; font-weight:700; font-size:15px; font-family:'Zen Maru Gothic';}
+  .day-head textarea.desc-f{width:100%; font-size:12.5px; color:var(--ink-soft); resize:vertical; min-height:34px;}
+  .day-head textarea.tips-f{width:100%; font-size:12.5px; color:var(--ocean-deep); background:var(--ocean-light); border:1px solid #b7dde3; border-radius:8px; padding:8px 10px; resize:vertical; min-height:38px;}
+  .plain-input{border:none; border-bottom:1px solid var(--line); background:transparent; padding:4px 2px; font-size:13px; outline:none; color:var(--ink);}
+  .plain-input:focus{border-color:var(--coral);}
+  .day-head-actions{display:flex; justify-content:flex-end; margin-top:6px;}
+
+  .timeline{position:relative; padding-left:4px;}
+  .item-row{position:relative; margin-bottom:12px; display:flex; gap:8px;}
+  .item-row .rail{display:flex; flex-direction:column; align-items:center; gap:4px; padding-top:10px; width:26px; flex:0 0 26px;}
+  .item-row .node{width:22px;height:22px;border-radius:50%; display:flex;align-items:center;justify-content:center; font-size:11px; color:#fff; flex:0 0 auto;}
+  .item-row.cat-flight .node{background:var(--ink);}
+  .item-row.cat-transport .node{background:var(--ink-soft);}
+  .item-row.cat-sight .node{background:var(--ocean);}
+  .item-row.cat-meal .node{background:var(--coral);}
+  .item-row.cat-shopping .node{background:var(--sun);}
+  .item-row.cat-free .node{background:#B9AE93;}
+  .item-row .rail .connector{flex:1; width:2px; background:var(--line); min-height:8px;}
+  .drag-handle{cursor:grab; color:#B9AE93; font-size:13px; user-select:none;}
+  .updown{display:flex; flex-direction:column; gap:2px;}
+  .updown button{width:18px; height:16px; font-size:9px; line-height:1; border:1px solid var(--line); background:#fff; border-radius:4px; color:var(--ink-soft); padding:0;}
+  .updown button:hover{border-color:var(--ocean); color:var(--ocean);}
+
+  .card{flex:1; min-width:0; background:var(--card); border:1px solid var(--line); border-radius:var(--radius); padding:12px 14px;}
+  .item-row.cat-transport .card{background:#FAF6EC; border-style:dashed;}
+  .item-row.drag-over .card{border-color:var(--coral); box-shadow:0 0 0 2px var(--coral-light);}
+
+  .card-toprow{display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-bottom:8px;}
+  select.cat-select{font-size:12px; border:1px solid var(--line); border-radius:8px; padding:4px 6px; background:#fff; color:var(--ink);}
+  input.time-f{width:150px; font-size:12.5px; font-weight:700; color:var(--ink-soft);}
+  label.req-toggle{display:flex; align-items:center; gap:4px; font-size:11.5px; color:var(--ink-soft); margin-left:auto;}
+  .row-actions{display:flex; gap:4px;}
+  .icon-btn{border:1px solid var(--line); background:#fff; border-radius:6px; width:24px; height:24px; font-size:12px; display:flex; align-items:center; justify-content:center; color:var(--ink-soft);}
+  .icon-btn:hover{border-color:var(--coral); color:var(--coral);}
+
+  input.title-f{width:100%; font-size:15px; font-weight:700; color:var(--ink); margin-bottom:6px; font-family:'Zen Maru Gothic','Noto Sans TC';}
+  textarea.note-f{width:100%; font-size:13px; color:var(--ink-soft); border:1px solid var(--line); border-radius:8px; padding:6px 8px; resize:vertical; min-height:36px; margin-bottom:8px; background:#fff;}
+  .maprow{display:flex; align-items:center; gap:6px; margin-bottom:8px;}
+  input.map-f{flex:1; font-size:12px; border:1px solid var(--line); border-radius:8px; padding:5px 8px; background:#fff;}
+  .maplink{display:inline-flex; align-items:center; gap:4px; font-size:12px; color:var(--ocean-deep); text-decoration:none; background:var(--ocean-light); border-radius:8px; padding:5px 10px; font-weight:700; white-space:nowrap;}
+  .maplink:hover{background:#b8dde3;}
+
+  .section-label{font-size:11px; color:var(--ink-soft); margin:8px 0 4px; font-weight:700;}
+
+  .modes-wrap{display:flex; flex-direction:column; gap:6px; margin-bottom:8px;}
+  .mode-row{display:flex; gap:5px; align-items:center; background:#fff; border:1px solid var(--line); border-radius:8px; padding:5px 7px; flex-wrap:wrap;}
+  .mode-row select.mode-icon{width:52px; font-size:14px; border:1px solid var(--line); border-radius:6px; padding:2px;}
+  .mode-row input.mode-label{width:88px; font-size:12px; border:1px solid var(--line); border-radius:6px; padding:4px 6px;}
+  .mode-row input.mode-time{width:90px; font-size:12px; border:1px solid var(--line); border-radius:6px; padding:4px 6px;}
+  .mode-row input.mode-dist{width:80px; font-size:12px; border:1px solid var(--line); border-radius:6px; padding:4px 6px;}
+  .mode-row input.mode-time::placeholder, .mode-row input.mode-dist::placeholder{color:#c9bfa0;}
+  .add-small-btn{align-self:flex-start; background:none; border:1px dashed var(--line); color:var(--ink-soft); font-size:12px; border-radius:8px; padding:5px 10px;}
+  .add-small-btn:hover{border-color:var(--ocean); color:var(--ocean);}
+
+  .costs-wrap{display:flex; flex-wrap:wrap; gap:8px; align-items:center;}
+  .cost-row{display:flex; align-items:center; gap:5px; background:var(--sand); border:1px dashed var(--line); border-radius:8px; padding:4px 7px;}
+  .cost-row select.cost-cat{font-size:11px; border:none; background:transparent; color:var(--ink-soft);}
+  .cost-row input.cost-label{width:64px; font-size:12px; border:none; background:transparent; border-bottom:1px solid var(--line); padding:2px;}
+  .cost-row span.yen{font-weight:700; color:var(--ink);}
+  .cost-row input.cost-val{width:70px; font-size:12.5px; font-weight:700; color:var(--coral); border:none; background:transparent; border-bottom:1px solid var(--line); padding:2px;}
+
+  .add-item-bar{display:flex; justify-content:center; margin:14px 0 30px;}
+  .add-item-btn{background:var(--ocean-deep); color:#fff; border:none; border-radius:24px; padding:10px 22px; font-size:13.5px; font-weight:700; font-family:'Zen Maru Gothic';}
+  .add-item-btn:hover{background:#0E5A6E;}
+
+  footer.tips{max-width:1200px; margin:0 auto 40px; padding:0 24px 24px;}
+  footer.tips .box{background:var(--card); border:1px solid var(--line); border-radius:var(--radius); padding:14px 18px; font-size:12.5px; color:var(--ink-soft); line-height:1.8;}
+  footer.tips .box b{color:var(--ink);}
+
+  @media (max-width:820px){
+    .layout{flex-direction:column;}
+    nav.daynav{position:static; flex-direction:row; overflow-x:auto; width:100%; flex:none;}
+    nav.daynav button.daybtn{min-width:120px; flex:0 0 auto;}
+    nav.daynav button.add-day{flex:0 0 auto;}
+  }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="top-inner">
+    <h1 class="brand">旅遊行程規劃表<span class="edit-badge" id="modeBadge">✏️ 編輯模式</span>
+      <small id="modeHint">點任何文字、時間、連結都能直接修改；卡片可拖拉／用上下箭頭調整順序；隨手新增或刪除都可以。所有內容會自動存在這個瀏覽器裡。</small>
+    </h1>
+  </div>
+</header>
+
+<div class="toolbar">
+  <div class="toolbar-inner">
+    <div class="budget-total">總花費<span id="grandTotal">¥0</span></div>
+    <div class="budget-breakdown">
+      <span class="bit"><i class="dot" style="background:#5A6B70"></i>交通<b id="sumTransport">¥0</b></span>
+      <span class="bit"><i class="dot" style="background:#E8572F"></i>餐飲<b id="sumMeal">¥0</b></span>
+      <span class="bit"><i class="dot" style="background:#1B8A9E"></i>門票<b id="sumTicket">¥0</b></span>
+      <span class="bit"><i class="dot" style="background:#F0A93B"></i>購物<b id="sumShopping">¥0</b></span>
+      <span class="bit"><i class="dot" style="background:#B9AE93"></i>其他<b id="sumOther">¥0</b></span>
+    </div>
+    <div class="toolbar-btns">
+      <button class="ghost-btn" id="exportBtn">⬇️ 匯出資料</button>
+      <button class="ghost-btn" id="importBtn">⬆️ 匯入資料</button>
+      <input type="file" id="importFile" accept="application/json,.json" style="display:none">
+      <button class="ghost-btn" id="clearCostBtn">清除所有花費數字</button>
+      <button class="ghost-btn danger" id="resetAllBtn">還原成預設行程</button>
+      <button class="lock-btn" id="lockToggleBtn">✅ 完成編輯</button>
+    </div>
+  </div>
+</div>
+
+<div class="layout">
+  <nav class="daynav" id="daynav"></nav>
+  <main class="daypanel" id="daypanel"></main>
+</div>
+
+<footer class="tips">
+  <div class="box">
+    <b>怎麼編輯：</b>所有白色欄位都可以直接點擊輸入／修改，包含時間、標題、說明文字、Google Maps 連結（貼網址或直接打地點名稱都可以，會自動變成可點擊的地圖按鈕）。<br>
+    <b>調整順序：</b>桌機可以按住卡片左邊的「⠿」拖拉排序；手機或想更精準時可以用「▲▼」按鈕一格一格移動。卡片右上角的「垃圾桶」可以刪除該卡，下方「＋新增行程卡片」可以加一張空白卡片再自己填。<br>
+    <b>交通方式：</b>把某張卡片類別選成「🧭交通移動」後，會出現交通方式清單，可以自己新增／刪除方式（例如步行、單軌電車、計程車、租車…），時間跟距離都是純文字欄位，自己手動填就好，不會自動計算。<br>
+    <b>花費：</b>任何一張卡片都可以自己加「花費欄位」，分類選交通／餐飲／門票／購物／其他，數字會自動加總到最上方。<br>
+    <b>編輯完成後鎖定：</b>右上角「✅ 完成編輯」可以一鍵切換成唯讀畫面（不會誤改到行程），畫面會變乾淨、拖拉／新增/刪除等按鈕都會隱藏；鎖定後花費金額仍然可以直接填寫，方便旅行時邊走邊記帳。想繼續調整行程再按「🔓 解除鎖定」回到編輯模式即可，兩種模式的內容是同一份，不會互相覆蓋。<br>
+    <b>換裝置／備份：</b>「⬇️ 匯出資料」會下載一個 JSON 檔，裡面是目前完整的行程與花費內容；把這個檔案傳到另一台裝置（用雲端硬碟、Email、AirDrop都可以），在那邊打開同一份網頁按「⬆️ 匯入資料」選這個檔案，就會還原成一模一樣的內容。建議編輯到一個段落就順手匯出備份一次，避免瀏覽器資料意外遺失。<br>
+    <b>資料儲存：</b>一切都存在這個瀏覽器的本機空間，重新整理不會消失；但清瀏覽器快取、換裝置或換瀏覽器就會不見，建議重要版本可以另外截圖或抄下來備份。右上角「還原成預設行程」會清空你所有修改，回到最初規劃好的版本，請小心使用（鎖定狀態下此按鈕會隱藏以避免誤觸）。
+  </div>
+</footer>
+
+<script>
+/* ============ utils ============ */
+const uid = () => 'id_' + Math.random().toString(36).slice(2,9);
+const mapUrl = q => `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q)}`;
+const catIcon = {flight:"✈️",transport:"🧭",sight:"⛩️",meal:"🍽️",shopping:"🛍️",free:"🕒"};
+const catOptions = [["flight","✈️ 交通(班機)"],["transport","🧭 交通移動"],["sight","⛩️ 景點"],["meal","🍽️ 餐飲"],["shopping","🛍️ 購物"],["free","🕒 自由/其他"]];
+const modeIconOptions = ["🚶","🚈","🚌","🚕","🚗","🚲","⛴️","📍"];
+const costCatOptions = [["transport","交通"],["meal","餐飲"],["ticket","門票"],["shopping","購物"],["other","其他"]];
+
+function mkMode(icon,label,time,dist){ return {id:uid(), icon, label, time, dist:dist||""}; }
+function mkCost(label,cat,ph,value){ return {id:uid(), label, cat, value: value||""}; }
+function mkItem(cat,time,title,note,opts){
+  opts = opts||{};
+  return {id:uid(), cat, time, title, note:note||"", map:opts.map||"", required:!!opts.required,
+    modes: opts.modes||[], costs: opts.costs||[]};
+}
+
+/* ============ seed / default itinerary ============ */
+function buildDefaultDays(){
+  return [
+    { id:uid(), date:"第1天", theme:"", desc:"", tips:"", items:[] },
+    { id:uid(), date:"第2天", theme:"", desc:"", tips:"", items:[] },
+    { id:uid(), date:"第3天", theme:"", desc:"", tips:"", items:[] },
+    { id:uid(), date:"第4天", theme:"", desc:"", tips:"", items:[] },
+    { id:uid(), date:"第5天", theme:"", desc:"", tips:"", items:[] },
+    { id:uid(), date:"第6天", theme:"", desc:"", tips:"", items:[] }
+  ];
+}
+
+/* ============ state ============ */
+const STORE_KEY = 'okinawa-itinerary-state-v3';
+const LOCK_KEY = 'okinawa-locked-v1';
+let days = loadState();
+let activeDay = 0;
+let locked = localStorage.getItem(LOCK_KEY) === 'true';
+
+function loadState(){
+  try{
+    const raw = localStorage.getItem(STORE_KEY);
+    if(raw){ const parsed = JSON.parse(raw); if(Array.isArray(parsed) && parsed.length) return parsed; }
+  }catch(e){}
+  return buildDefaultDays();
+}
+let saveTimer=null;
+function saveState(){
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(()=>{ localStorage.setItem(STORE_KEY, JSON.stringify(days)); }, 200);
+}
+
+function applyLockUI(){
+  const badge = document.getElementById('modeBadge');
+  const hint = document.getElementById('modeHint');
+  const btn = document.getElementById('lockToggleBtn');
+  const resetBtn = document.getElementById('resetAllBtn');
+  if(locked){
+    badge.textContent = '🔒 已鎖定（唯讀）';
+    hint.textContent = '行程內容已鎖定不能誤改，只有花費金額還能填寫。想繼續調整行程請按右上角「解除鎖定」。';
+    btn.textContent = '🔓 解除鎖定';
+    btn.classList.add('is-locked');
+    if(resetBtn) resetBtn.style.display = 'none';
+  }else{
+    badge.textContent = '✏️ 編輯模式';
+    hint.textContent = '點任何文字、時間、連結都能直接修改；卡片可拖拉／用上下箭頭調整順序；隨手新增或刪除都可以。所有內容會自動存在這個瀏覽器裡。';
+    btn.textContent = '✅ 完成編輯';
+    btn.classList.remove('is-locked');
+    if(resetBtn) resetBtn.style.display = '';
+  }
+}
+
+/* ============ nav ============ */
+const daynav = document.getElementById('daynav');
+const daypanel = document.getElementById('daypanel');
+
+function renderNav(){
+  daynav.innerHTML = days.map((d,i)=>`
+    <button class="daybtn ${i===activeDay?'active':''}" data-i="${i}">
+      <div class="d">Day ${i+1}｜${escapeAttr(d.date)}</div>
+      <div class="theme">${escapeHtml(d.theme||'（未命名）')}</div>
+    </button>
+  `).join('') + (locked ? '' : `<button class="add-day" id="addDayBtn">＋ 新增一天</button>`);
+  daynav.querySelectorAll('.daybtn').forEach(btn=>{
+    btn.addEventListener('click',()=>{ activeDay = parseInt(btn.dataset.i); renderNav(); renderDay(); });
+  });
+  const addDayBtn = document.getElementById('addDayBtn');
+  if(addDayBtn) addDayBtn.addEventListener('click',()=>{
+    days.push({id:uid(), date:"新的一天", theme:"新行程", desc:"", tips:"", items:[]});
+    activeDay = days.length-1;
+    saveState(); renderNav(); renderDay();
+  });
+}
+
+function escapeHtml(s){ return (s||'').replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
+function escapeAttr(s){ return escapeHtml(s); }
+
+/* ============ day panel ============ */
+function renderDay(){
+  const d = days[activeDay];
+
+  if(locked){
+    daypanel.innerHTML = `
+      <div class="view-day-head">
+        <h2>Day ${activeDay+1}｜${escapeHtml(d.date)}　${escapeHtml(d.theme)}</h2>
+        ${d.desc?`<div class="desc">${escapeHtml(d.desc)}</div>`:''}
+        ${d.tips?`<div class="view-day-tips">💡 <b>建議：</b>${escapeHtml(d.tips)}</div>`:''}
+      </div>
+      <div class="timeline" id="timeline"></div>
+    `;
+  }else{
+    daypanel.innerHTML = `
+      <div class="day-head">
+        <div class="row1">
+          <div class="field-inline"><label>日期</label><input class="plain-input date-f" value="${escapeAttr(d.date)}"></div>
+          <div class="field-inline" style="flex:1"><label>主題</label><input class="plain-input theme-f" value="${escapeAttr(d.theme)}"></div>
+        </div>
+        <div class="field-inline" style="margin-bottom:6px"><label>本日說明</label><textarea class="desc-f">${escapeHtml(d.desc)}</textarea></div>
+        <div class="field-inline"><label>💡 建議（會顯示在標題下方的提示框）</label><textarea class="tips-f">${escapeHtml(d.tips||'')}</textarea></div>
+        <div class="day-head-actions"><button class="ghost-btn danger" id="delDayBtn">🗑 刪除這一天</button></div>
+      </div>
+      <div class="timeline" id="timeline"></div>
+      <div class="add-item-bar"><button class="add-item-btn" id="addItemBtn">＋ 新增行程卡片</button></div>
+    `;
+    daypanel.querySelector('.date-f').addEventListener('input', e=>{ d.date=e.target.value; saveState(); renderNav(); });
+    daypanel.querySelector('.theme-f').addEventListener('input', e=>{ d.theme=e.target.value; saveState(); renderNav(); });
+    daypanel.querySelector('.desc-f').addEventListener('input', e=>{ d.desc=e.target.value; saveState(); });
+    daypanel.querySelector('.tips-f').addEventListener('input', e=>{ d.tips=e.target.value; saveState(); });
+    daypanel.querySelector('#delDayBtn').addEventListener('click', ()=>{
+      if(days.length<=1){ alert('至少要保留一天喔。'); return; }
+      if(!confirm(`確定要刪除「${d.theme||d.date}」這一天嗎？`)) return;
+      days.splice(activeDay,1);
+      activeDay = Math.max(0, activeDay-1);
+      saveState(); renderNav(); renderDay();
+    });
+    daypanel.querySelector('#addItemBtn').addEventListener('click', ()=>{
+      d.items.push(mkItem("sight","","新景點／行程",""));
+      saveState(); renderTimeline();
+    });
+  }
+  renderTimeline();
+  updateTotals();
+}
+
+/* ============ timeline (items) ============ */
+let dragSrcIdx = null;
+
+function renderTimeline(){
+  const d = days[activeDay];
+  const tl = document.getElementById('timeline');
+  tl.innerHTML = d.items.map((it,idx)=> locked ? itemRowHTMLView(it, idx) : itemRowHTML(it, idx)).join('');
+  d.items.forEach((it,idx)=> bindItemRow(it, idx));
+}
+
+function itemRowHTML(it, idx){
+  return `
+  <div class="item-row cat-${it.cat}" data-idx="${idx}">
+    <div class="rail">
+      <span class="drag-handle" draggable="true" title="拖拉排序">⠿</span>
+      <div class="node">${catIcon[it.cat]||'•'}</div>
+      <div class="connector"></div>
+    </div>
+    <div class="card">
+      <div class="card-toprow">
+        <select class="cat-select">${catOptions.map(([v,l])=>`<option value="${v}" ${it.cat===v?'selected':''}>${l}</option>`).join('')}</select>
+        <input class="plain-input time-f" placeholder="時間，如 09:00 或 09:00–10:30" value="${escapeAttr(it.time)}">
+        <label class="req-toggle"><input type="checkbox" class="req-cb" ${it.required?'checked':''}> ★必訪</label>
+        <div class="row-actions">
+          <div class="updown"><button class="upBtn" title="上移">▲</button><button class="downBtn" title="下移">▼</button></div>
+          <button class="icon-btn delBtn" title="刪除">🗑</button>
+        </div>
+      </div>
+      <input class="title-f" placeholder="標題／景點名稱" value="${escapeAttr(it.title)}">
+      <textarea class="note-f" placeholder="補充說明文字（自由填寫）">${escapeHtml(it.note)}</textarea>
+      <div class="maprow">
+        <input class="map-f" placeholder="Google Maps 連結，或直接輸入地點名稱" value="${escapeAttr(it.map)}">
+        ${it.map ? `<a class="maplink" target="_blank" rel="noopener" href="${it.map.startsWith('http')?it.map:mapUrl(it.map)}">📍 地圖</a>` : ''}
+      </div>
+      ${it.cat==='transport' ? modesHTML(it) : ''}
+      <div class="section-label">花費欄位</div>
+      <div class="costs-wrap">${it.costs.map(c=>costRowHTML(c)).join('')}
+        <button class="add-small-btn addCostBtn">＋ 新增花費欄位</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+function modesHTML(it){
+  return `
+    <div class="section-label">交通方式（可自訂新增，時間／距離手動填寫）</div>
+    <div class="modes-wrap">
+      ${it.modes.map(m=>modeRowHTML(m)).join('')}
+      <button class="add-small-btn addModeBtn">＋ 新增交通方式</button>
+    </div>
+  `;
+}
+function modeRowHTML(m){
+  return `
+    <div class="mode-row" data-mid="${m.id}">
+      <select class="mode-icon">${modeIconOptions.map(ic=>`<option value="${ic}" ${m.icon===ic?'selected':''}>${ic}</option>`).join('')}</select>
+      <input class="mode-label" placeholder="方式名稱" value="${escapeAttr(m.label)}">
+      <input class="mode-time" placeholder="用時，如 15分" value="${escapeAttr(m.time)}">
+      <input class="mode-dist" placeholder="距離(選填)" value="${escapeAttr(m.dist)}">
+      <button class="icon-btn delModeBtn" title="刪除">✕</button>
+    </div>
+  `;
+}
+function costRowHTML(c){
+  return `
+    <div class="cost-row" data-cid="${c.id}">
+      <select class="cost-cat">${costCatOptions.map(([v,l])=>`<option value="${v}" ${c.cat===v?'selected':''}>${l}</option>`).join('')}</select>
+      <input class="cost-label" value="${escapeAttr(c.label)}" placeholder="項目名稱">
+      <span class="yen">¥</span>
+      <input class="cost-val" type="number" min="0" inputmode="numeric" value="${escapeAttr(c.value)}" placeholder="金額">
+      <button class="icon-btn delCostBtn" title="刪除">✕</button>
+    </div>
+  `;
+}
+
+function itemRowHTMLView(it, idx){
+  return `
+  <div class="item-row cat-${it.cat}" data-idx="${idx}">
+    <div class="rail"><div class="node">${catIcon[it.cat]||'•'}</div><div class="connector"></div></div>
+    <div class="card">
+      <div class="view-time">${escapeHtml(it.time)}</div>
+      <div class="view-title">${escapeHtml(it.title)}${it.required?'<span class="required-tag">必訪景點</span>':''}</div>
+      ${it.note?`<div class="view-note">${escapeHtml(it.note)}</div>`:''}
+      ${it.map?`<div class="maprow"><a class="maplink" target="_blank" rel="noopener" href="${it.map.startsWith('http')?it.map:mapUrl(it.map)}">📍 地圖</a></div>`:''}
+      ${(it.cat==='transport' && it.modes.length) ? viewModesHTML(it.modes) : ''}
+      ${it.costs.length ? viewCostsHTML(it.costs) : ''}
+    </div>
+  </div>`;
+}
+function viewModesHTML(modes){
+  return `<div class="view-modes">${modes.map(m=>`
+    <div class="view-mode-chip"><span class="ic">${m.icon}</span><span>${escapeHtml(m.label)}</span>${m.time?`<span class="sub">・${escapeHtml(m.time)}</span>`:''}${m.dist?`<span class="sub">・${escapeHtml(m.dist)}</span>`:''}</div>
+  `).join('')}</div>`;
+}
+function viewCostsHTML(costs){
+  const catLabel = cat => (costCatOptions.find(o=>o[0]===cat)||[,cat])[1];
+  return `<div class="view-costs">${costs.map(c=>`
+    <div class="cost-row" data-cid="${c.id}">
+      <span style="font-size:11px;color:var(--ink-soft)">${escapeHtml(catLabel(c.cat))}｜${escapeHtml(c.label)}</span>
+      <span class="yen">¥</span>
+      <input type="number" min="0" inputmode="numeric" class="cost-val" value="${escapeAttr(c.value)}" placeholder="金額">
+    </div>
+  `).join('')}</div>`;
+}
+
+function bindItemRow(it, idx){
+  const d = days[activeDay];
+  const row = document.querySelector(`.item-row[data-idx="${idx}"]`);
+  if(!row) return;
+
+  if(locked){
+    it.costs.forEach(c=>{
+      const crow = row.querySelector(`.cost-row[data-cid="${c.id}"]`);
+      if(!crow) return;
+      const inp = crow.querySelector('.cost-val');
+      if(inp) inp.addEventListener('input', e=>{ c.value=e.target.value; saveState(); updateTotals(); });
+    });
+    return; // no other editing while locked
+  }
+
+  // top row
+  row.querySelector('.cat-select').addEventListener('change', e=>{ it.cat=e.target.value; saveState(); renderTimeline(); });
+  row.querySelector('.time-f').addEventListener('input', e=>{ it.time=e.target.value; saveState(); });
+  row.querySelector('.req-cb').addEventListener('change', e=>{ it.required=e.target.checked; saveState(); });
+  row.querySelector('.delBtn').addEventListener('click', ()=>{
+    if(!confirm('刪除這張卡片？')) return;
+    d.items.splice(idx,1); saveState(); renderTimeline();
+  });
+  row.querySelector('.upBtn').addEventListener('click', ()=>{
+    if(idx===0) return;
+    [d.items[idx-1], d.items[idx]] = [d.items[idx], d.items[idx-1]];
+    saveState(); renderTimeline();
+  });
+  row.querySelector('.downBtn').addEventListener('click', ()=>{
+    if(idx===d.items.length-1) return;
+    [d.items[idx+1], d.items[idx]] = [d.items[idx], d.items[idx+1]];
+    saveState(); renderTimeline();
+  });
+
+  row.querySelector('.title-f').addEventListener('input', e=>{ it.title=e.target.value; saveState(); });
+  row.querySelector('.note-f').addEventListener('input', e=>{ it.note=e.target.value; saveState(); });
+  row.querySelector('.map-f').addEventListener('input', e=>{
+    it.map=e.target.value; saveState();
+    const linkWrap = row.querySelector('.maprow');
+    const existing = linkWrap.querySelector('.maplink');
+    if(existing) existing.remove();
+    if(it.map){
+      const a = document.createElement('a');
+      a.className='maplink'; a.target='_blank'; a.rel='noopener';
+      a.href = it.map.startsWith('http') ? it.map : mapUrl(it.map);
+      a.textContent='📍 地圖';
+      linkWrap.appendChild(a);
+    }
+  });
+
+  // modes
+  if(it.cat==='transport'){
+    row.querySelector('.addModeBtn').addEventListener('click', ()=>{
+      it.modes.push(mkMode("🚶","新方式","")); saveState(); renderTimeline();
+    });
+    it.modes.forEach(m=>{
+      const mrow = row.querySelector(`.mode-row[data-mid="${m.id}"]`);
+      if(!mrow) return;
+      mrow.querySelector('.mode-icon').addEventListener('change', e=>{ m.icon=e.target.value; saveState(); });
+      mrow.querySelector('.mode-label').addEventListener('input', e=>{ m.label=e.target.value; saveState(); });
+      mrow.querySelector('.mode-time').addEventListener('input', e=>{ m.time=e.target.value; saveState(); });
+      mrow.querySelector('.mode-dist').addEventListener('input', e=>{ m.dist=e.target.value; saveState(); });
+      mrow.querySelector('.delModeBtn').addEventListener('click', ()=>{
+        it.modes = it.modes.filter(x=>x.id!==m.id); saveState(); renderTimeline();
+      });
+    });
+  }
+
+  // costs
+  row.querySelector('.addCostBtn').addEventListener('click', ()=>{
+    it.costs.push(mkCost("花費","other","")); saveState(); renderTimeline();
+  });
+  it.costs.forEach(c=>{
+    const crow = row.querySelector(`.cost-row[data-cid="${c.id}"]`);
+    if(!crow) return;
+    crow.querySelector('.cost-cat').addEventListener('change', e=>{ c.cat=e.target.value; saveState(); updateTotals(); });
+    crow.querySelector('.cost-label').addEventListener('input', e=>{ c.label=e.target.value; saveState(); });
+    crow.querySelector('.cost-val').addEventListener('input', e=>{ c.value=e.target.value; saveState(); updateTotals(); });
+    crow.querySelector('.delCostBtn').addEventListener('click', ()=>{
+      it.costs = it.costs.filter(x=>x.id!==c.id); saveState(); renderTimeline(); updateTotals();
+    });
+  });
+
+  // drag & drop reorder
+  const handle = row.querySelector('.drag-handle');
+  handle.addEventListener('dragstart', e=>{ dragSrcIdx = idx; e.dataTransfer.effectAllowed='move'; });
+  row.addEventListener('dragover', e=>{ e.preventDefault(); row.classList.add('drag-over'); });
+  row.addEventListener('dragleave', ()=> row.classList.remove('drag-over'));
+  row.addEventListener('drop', e=>{
+    e.preventDefault(); row.classList.remove('drag-over');
+    if(dragSrcIdx===null || dragSrcIdx===idx) return;
+    const arr = days[activeDay].items;
+    const [moved] = arr.splice(dragSrcIdx,1);
+    const target = dragSrcIdx < idx ? idx-1 : idx;
+    arr.splice(target,0,moved);
+    dragSrcIdx=null; saveState(); renderTimeline();
+  });
+}
+
+/* ============ totals ============ */
+function updateTotals(){
+  let totals = {transport:0, meal:0, ticket:0, shopping:0, other:0};
+  let grand = 0;
+  days.forEach(d=> d.items.forEach(it=> it.costs.forEach(c=>{
+    const v = Number(c.value)||0;
+    grand += v;
+    if(totals[c.cat]!==undefined) totals[c.cat]+=v; else totals.other+=v;
+  })));
+  document.getElementById('grandTotal').textContent = `¥${grand.toLocaleString()}`;
+  document.getElementById('sumTransport').textContent = `¥${totals.transport.toLocaleString()}`;
+  document.getElementById('sumMeal').textContent = `¥${totals.meal.toLocaleString()}`;
+  document.getElementById('sumTicket').textContent = `¥${totals.ticket.toLocaleString()}`;
+  document.getElementById('sumShopping').textContent = `¥${totals.shopping.toLocaleString()}`;
+  document.getElementById('sumOther').textContent = `¥${totals.other.toLocaleString()}`;
+}
+
+/* ============ toolbar buttons ============ */
+document.getElementById('exportBtn').addEventListener('click', ()=>{
+  const payload = { savedAt: new Date().toISOString(), locked, days };
+  const blob = new Blob([JSON.stringify(payload, null, 2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const stamp = new Date().toISOString().slice(0,10);
+  a.href = url;
+  a.download = `okinawa-itinerary-${stamp}.json`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+});
+document.getElementById('importBtn').addEventListener('click', ()=>{
+  document.getElementById('importFile').click();
+});
+document.getElementById('importFile').addEventListener('change', (e)=>{
+  const file = e.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    try{
+      const parsed = JSON.parse(reader.result);
+      const incoming = Array.isArray(parsed) ? parsed : parsed.days;
+      if(!Array.isArray(incoming) || !incoming.length) throw new Error('格式不正確');
+      if(!confirm('確定要匯入這份資料嗎？目前畫面上的內容會被取代（建議先匯出備份）。')) { e.target.value=''; return; }
+      days = incoming;
+      if(typeof parsed.locked === 'boolean'){
+        locked = parsed.locked;
+        localStorage.setItem(LOCK_KEY, locked ? 'true' : 'false');
+      }
+      activeDay = 0;
+      saveState(); applyLockUI(); renderNav(); renderDay();
+      alert('匯入完成！');
+    }catch(err){
+      alert('這個檔案讀不太起來，請確認是從本頁「匯出資料」下載的 JSON 檔。');
+    }
+    e.target.value = '';
+  };
+  reader.readAsText(file);
+});
+document.getElementById('clearCostBtn').addEventListener('click', ()=>{
+  if(!confirm('確定要清除所有花費數字嗎？欄位本身會保留，只清空金額。')) return;
+  days.forEach(d=> d.items.forEach(it=> it.costs.forEach(c=> c.value="")));
+  saveState(); renderTimeline(); updateTotals();
+});
+document.getElementById('resetAllBtn').addEventListener('click', ()=>{
+  if(!confirm('確定要還原成最初預設的行程嗎？你目前做的所有修改都會消失，此動作無法復原。')) return;
+  days = buildDefaultDays();
+  activeDay = 0;
+  saveState(); renderNav(); renderDay();
+});
+document.getElementById('lockToggleBtn').addEventListener('click', ()=>{
+  locked = !locked;
+  localStorage.setItem(LOCK_KEY, locked ? 'true' : 'false');
+  applyLockUI();
+  renderNav();
+  renderDay();
+});
+
+/* ============ init ============ */
+applyLockUI();
+renderNav();
+renderDay();
+</script>
+</body>
+</html>
